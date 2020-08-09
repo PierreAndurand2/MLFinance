@@ -300,7 +300,7 @@ def backtest():
     	
     #x = w0  
     #res = minimize(lossFunc, w0, tol=1e-6, bounds=BNDS, constraints=cons) #minimize chooses the method between BFGS, L-BFGS-B, and SLSQP
-    res = minimize(lossFunc, w0, tol=1e-6, bounds=BNDS) #minimize chooses the method between BFGS, L-BFGS-B, and SLSQP -- no more constraints
+    res = minimize(lossFunc, w0, method='SLSQP',tol=1e-6, bounds=BNDS) #method=SLSQP -- no more constraints
     x = res.x
     
 	# Now store some calculated quantities for portfolio creation and analysis etc.
