@@ -3,13 +3,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from importlib import reload
 import pdblp   			#for Bloomberg API
-
+import os
+import sys
 
 from scipy.optimize import minimize  #For minimizing and finding weights
 
 
 # global variables
-BBDATACACHEPATH = 'C:/Users/pandurand/Documents/Columbia/MLFInance/Project/';
+BBDATACACHEPATH = 'bbcache/';      # MUST END IN /
+a = os.makedirs(BBDATACACHEPATH, exist_ok=1 )   
 
 # global variables for the optimizer
 F = {}    # will hold our backtest data and run data. It gets overwritten everytime we run a new contract
@@ -17,6 +19,9 @@ PF = {}   # will hold portfolio PNL
 
 
 BBCACHE = {} # mem cache of BB loads, to limit loads
+
+# for output redirection to avoid scipy optimizer output excess  
+SYSNORMALSTDOUT = sys.stdout    
     
 # contains variables helping with risk management constraints
 def myvars():
@@ -31,28 +36,37 @@ def myvars():
 
 
 # load data from bloomberg
-def bbload(ticker, start_date,end_date):
+def bbload(ticker, start_date, end_date):
     
     global BBCACHE
+    global BBDATACACHEPATH
+        
     name = ticker[:3]
+    
+    CSVcachefilename = BBDATACACHEPATH + ticker +  '.' + start_date + end_date + '.csv'
 	
     if ticker in BBCACHE:
         a = BBCACHE[ticker]
         print('USING CACHED')
 		
     else:
-	
-        con = pdblp.BCon(debug=False, port=8194, timeout=5000)
-        con.start()
-        a = con.bdh(ticker, ['PX_LAST'],  start_date, end_date )
-        a.columns=['close']
-	
-        #save as csv just in case
-        global BBDATACACHEPATH
-        fn = BBDATACACHEPATH+ticker+'.csv'
-        a.to_csv(fn)
-        print('Saved to '+fn)
-	
+   
+        # try to load CSV first, it is easier than BB and good for those without BB
+        try: 
+            a = pd.read_csv(CSVcachefilename, index_col = "date" )
+            print('Loaded from CSV ' + CSVcachefilename)
+        
+        # If that fails, load from BB
+        except:
+            con = pdblp.BCon(debug=False, port=8194, timeout=5000)
+            con.start()
+            a = con.bdh(ticker, ['PX_LAST'],  start_date, end_date )
+            a.columns=['close']
+
+            #save as csv 
+            #a.to_csv(CSVcachefilename)
+            #print('Loaded from BB and Saved to '+CSVcachefilename)
+
         #cache
         BBCACHE[ticker] = a
 	
@@ -300,7 +314,16 @@ def backtest():
     	
     #x = w0  
     #res = minimize(lossFunc, w0, tol=1e-6, bounds=BNDS, constraints=cons) #minimize chooses the method between BFGS, L-BFGS-B, and SLSQP
-    res = minimize(lossFunc, w0, method='SLSQP',tol=1e-6, bounds=BNDS) #method=SLSQP -- no more constraints
+    #res = minimize(lossFunc, w0, method='SLSQP',tol=1e-6, bounds=BNDS) #method=SLSQP -- no more constraints
+    
+    
+    nulloutput()  # stop output to stdout for the min function
+    
+    res = minimize(lossFunc, w0, method='SLSQP', tol=1e-6, bounds=BNDS, options={'disp': False, 'maxiter': 1e5 } ) #minimize with method SLSQP 
+    
+    normaloutput()
+    
+    
     x = res.x
     
 	# Now store some calculated quantities for portfolio creation and analysis etc.
@@ -404,7 +427,7 @@ def pfopt(df):
   w0 = n * [ 1/n ]
   BNDS = ((-1,1),)*n
   cons = ({'type': 'eq','fun': pfConsFunc })
-  res = minimize(pfGoodFunc, w0, tol=1e-6, bounds=BNDS, constraints=cons)
+  res = minimize(pfGoodFunc, w0, tol=1e-6, bounds=BNDS, constraints=cons, options={ 'disp': False,  'maxiter': 1e5 } )
   
   return res.x  
 		
@@ -430,3 +453,13 @@ def pfGoodFunc(x):
    g = - sharpe(INSA) #negative since we minimize
    
    return g
+   
+# STD out redirect 
+def nulloutput():
+    f = open(os.devnull, 'w')
+    sys.stdout = f
+    
+# STD out set back to normal. Needs global var    
+def normaloutput():
+    global SYSNORMALSTDOUT
+    sys.stdout = SYSNORMALSTDOUT
