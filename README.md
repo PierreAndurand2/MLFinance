@@ -1,7 +1,20 @@
 # MLFinance
 We study different ML trading strategies on Futures (examples here are Brent futures (CO1), ...
 ... Copper futures (HG1), 10-year Treasuries (TY1), Nasdaq Futures (NQ1), SP500 futures (SP500), Gold Futures (GC1))
-main_notebook optimizes between Algorithmic Trading Algorithms with fixed parameters having a certain logic to them
+Data gets downloaded from Bloomberg, so user needs an account and a live link. 
+User inputs the futures contracts to be downloaded and used, data period, percentage testing data, aum...
+
+AdaBoost and Random Forest are analysed on the portfolio of futures with features composed of a mix of momentum and oscillator technical indicators.
+A double portfolio optimization of fixed-parameter Algorithmic Trading Strategies such as MACD, SMA, RSI, Bollinger bands etc is also run.
+The best model will be a weighted average of the 3 models
+
+main50.ipynb runs everything except the ATS parameter optimization as we decided not to use it due to over fitting. 
+main50.py could also be run directly, but the Notebook is a lot more user friendly
+
+The pdf files are the results for different percentage of training data. Results60.pdf represents 60% training data, 40% testing data and show the results of AdaBoost and Random Forest as well as the final model which is 25% AdaBoost+25%RF+50%ATS portfolio optimization
+
+ATS portfolio optimization:
+It optimizes between Algorithmic Trading Algorithms with fixed parameters having a certain logic to them
 Long Term Moving Average: Simple Moving Average(200)
 Medium Term Moving Average: SMA(50)
 Short Term Moving Average: SMA(20)
@@ -17,6 +30,9 @@ We use a long training period (about 10 years), and then a long testing period (
 We made sure that the training period incorporated very different types of markets (trending, range bound, and crisis)
 
 ###NOTEBOOKS###
+main50.ipynb runs everything
+
+OLD Notebooks not included anymore. Available on request
 1) main_notebook.ipynb runs the double optimization on a portfolio of assets, and ATS with fixed parameters
 2) It calls project_lib2.py
 3) main2.py runs it in Python and asks the user for futures contracts to be input, lot size of contracts, amount of money to be managed, start date of training period,...
@@ -36,8 +52,11 @@ We made sure that the training period incorporated very different types of marke
    as well as the main metrics: Sharpe, returns and volatility. Accuracy on training and testing data as well as confusion matrices are also output per contract
    
 ###RESULTS###
-1) Double optimisation on ATS without optimised parameters bring the best results. Better than Traditional ML methods such as AdaBoost and RandomForest
-   Optimising ATS parameters brings overfitting, and has better results on training data, but worse results on testing data
+
+1) Final model which is (25% AdaBoost+25% RF+50% ATS portfolio optimization) brings very good results on any testing period tested, with a Sharpe of 0.95 over 10.5 years testing period (out of sample). It does much better than a buy and hold portfolio, and did not get hurt significantly in times of crisis.
+ATS optimization results in Results_ATSopt_50.pdf, Results_ATSopt_60.pdf, Results_ATSopt_75.pdf, Results_ATSopt_85.pdf
+All other results in the Results50.pdf, Results60.pdf, Results75.pdf, Results85.pdf. (The number is the % of training data used)
+
 
 ###NOTES###
 We can input any portfolio of contracts, and add trading strategies to it easily
